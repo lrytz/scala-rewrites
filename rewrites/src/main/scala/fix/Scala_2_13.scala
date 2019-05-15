@@ -45,7 +45,7 @@ final class Scala_2_13 extends SemanticRule("Scala_2_13") {
     }
 
     val globalImports = scala.collection.mutable.Set.empty[String]
-    def addGlobalImport(importer: Importer) = {
+    def addGlobalImport(importer: Importer): Patch = {
       if (globalImports.add(importer.structure))
         Patch.addGlobalImport(importer)
       else
@@ -59,8 +59,8 @@ final class Scala_2_13 extends SemanticRule("Scala_2_13") {
       }.asPatch
     }
 
-    def fixI(interpolating: Boolean): PartialFunction[Tree, Patch] = {
-      def replaceTree(t: Tree, s: String) = {
+    def fixI(interpolating: Boolean, inParam: Boolean): PartialFunction[Tree, Patch] = {
+      def replaceTree(t: Tree, s: String): Patch = {
         recordHandled(t)
         val replacement = t match {
           case _: Term.Name if interpolating => s"{$s}"
@@ -72,15 +72,17 @@ final class Scala_2_13 extends SemanticRule("Scala_2_13") {
         replaceTree(tree, s"StdIn.$name") + addGlobalImport(importer"scala.io.StdIn")
       }
       {
-        case Term.Interpolate(_, _, args) => args.collect(fixI(true)).asPatch
+        case Term.Interpolate(_, _, args) => args.collect(fixI(true, inParam)).asPatch
 
-        case Term.Param(_, _, Some(scalaSeq(x @ Type.Apply(t, _))), _) =>
-          recordHandled(x)
-          replaceTree(t, "sc.Seq") + addGlobalImport(importer"scala.{collection => sc}")
+        case Term.Param(_, _, dcltpe, default) =>
+          List(dcltpe, default).flatten.flatMap(_.collect(fixI(interpolating, true))).asPatch
 
         case scalaSeq(x @ Type.Apply(t, _)) =>
           recordHandled(x)
-          replaceTree(t, "sci.Seq") + addGlobalImport(importer"scala.collection.{immutable => sci}")
+          if (inParam)
+            replaceTree(t, "sc.Seq") + addGlobalImport(importer"scala.{collection => sc}")
+          else
+            replaceTree(t, "sci.Seq") + addGlobalImport(importer"scala.collection.{immutable => sci}")
 
         case EOL(i: Importee) => Patch.removeImportee(i)
         case EOL(t: Term)     => replaceTree(t, "System.lineSeparator")
@@ -114,7 +116,7 @@ final class Scala_2_13 extends SemanticRule("Scala_2_13") {
         case t @ Lit.Symbol(sym) => Patch.replaceTree(t, s"""Symbol("${sym.name}")""")
       }
     }
-    doc.tree.collect(new Combined({ case t if !handled(t) => t }, fixI(false))).asPatch
+    doc.tree.collect(new Combined({ case t if !handled(t) => t }, fixI(false, false))).asPatch
   }
 }
 

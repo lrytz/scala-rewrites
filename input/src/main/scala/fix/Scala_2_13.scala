@@ -19,7 +19,7 @@ object Scala_2_13 {
   def currentTimeMillis3 = scala.compat.Platform.currentTime
   def currentTimeMillis4 = s"now: $currentTime"
 
-  def length(xs: Seq[Int]): Int = xs.length
+  def length(xs: Seq[Int], ys: List[Seq[Int]], zs: Seq[List[Seq[Int]]]): Seq[Int] = List(xs.length, ys.size, zs.length)
   def singleton[A](x: A): Seq[A] = List(x)
 
   def arrayCopy1() = arraycopy(null, 0, null, 0, 0)

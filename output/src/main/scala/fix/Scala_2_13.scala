@@ -18,7 +18,7 @@ object Scala_2_13 {
   def currentTimeMillis3 = System.currentTimeMillis
   def currentTimeMillis4 = s"now: ${System.currentTimeMillis}"
 
-  def length(xs: sc.Seq[Int]): Int = xs.length
+  def length(xs: sc.Seq[Int], ys: List[sc.Seq[Int]], zs: sc.Seq[List[sc.Seq[Int]]]): sci.Seq[Int] = List(xs.length, ys.size, zs.length)
   def singleton[A](x: A): sci.Seq[A] = List(x)
 
   def arrayCopy1() = System.arraycopy(null, 0, null, 0, 0)
